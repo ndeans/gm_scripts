@@ -149,9 +149,118 @@ function getTopicAndPage(url) {
 
 function processPage(doc, post_data) {
 
+    var html_main;
+    var page_count = 0;
+    var post_count = 0;
+    var ad_count = 0;
+
+    var post_date;
+    var post_link;
+    var post_auth;
+    var post_text;
+    
+    var topic_data = [];                            // title and total pages (taken from page)
+
+    console.log("processPage() : function test...");
+
+    post_count = post_data.length;
+    console.log("processPage() : post_data.length (starting) = " + post_count);
+
+
+
+    console.log("processPage() : test 001 : " + doc.getElementsByTagName('body')[0].children.length);
+
+    // for some reason, the following code only works for the first page load at 15 post_data records.
+    html_main = document.getElementsByTagName('body')[0].children[2];
+    console.log("processPage() : pulled main element..." + html_main.nodeType);
+
+    // topic data from page header  
+    var k = parseInt(html_main.children[2].children.length,10) - 1;
+    console.log("processPage() : number of nav links = " + k);
+   
+    // number of pages from page header
+    var last_nav = html_main.children[2].children[k].textContent;
+    console.log("processPage() : last nav links = " + last_nav);
+
+    if (last_nav == ">>") {
+        console.log("processPage() : not the last page.");
+        topic_pages = html_main.children[2].children[k-1].textContent;  
+    }
+    else {
+        console.log("processPage() : last page.");     
+        topic_pages = html_main.children[2].children[k].textContent;    
+        last_page = 1;
+    }
+
+    console.log("processPage() : pulled topic_pages... " + topic_pages);
+
+
+    var topic_title = html_main.children[4].innerHTML.trim();
+    console.log("processPage() : pulled topic_title... " + topic_title);
+
+    topic_data = [topic_title, topic_pages];
+    console.log("processPage() : topic data extracted...");
+
+
+    // post data
+    var table = html_main.children[12].children[0];
+    for (var i = 1, row; row = table.rows[i]; i++) {                                          // i initialized to 1 to skip the page header row.
+
+        post_text = "";
+
+        if (row.querySelector(".postuserinfo").textContent.length == 1) {                       // advertisement row
+            ad_count++;
+            continue;
+        }
+
+        if (row.querySelector(".postuserinfo").children.length == 3) {                          // post row 1
+            post_date = row.cells[0].children[2].textContent.trim();
+            post_link = row.cells[0].children[1].children[0].innerHTML;
+            post_count++;
+        }
+        else {                                                                                  // post row 2
+            post_auth = row.cells[0].children[0].children[0].textContent;
+
+            // sift through the actual elements in the post text and just get the original quotes
+            var contents = row.cells[1].children[0];
+            var content  = contents.firstChild;
+            var cc = 0;
+
+            while (content) {
+
+                if (content.nodeType === Node.ELEMENT_NODE) {
+                }
+
+                if (content.nodeType === Node.TEXT_NODE) {
+                    post_text += content.textContent + "<hr>";
+                }
+
+                content = content.nextSibling;
+                cc++;
+            }
+
+            post_data.push([post_auth, post_date, post_link, post_text]);
+            // post_data.push(["auth": post_auth, "date": post_date, "link": post_link, "text": post_text]);
+
+
+            // console.log("..post recorded added to post_data: current_page=" + current_page + ", post_count=" + post_count + ", post_data size=" + post_data.length);
+
+        }
+
+    }  // End of Table Loop
+
+    if (post_data.length != post_count ) {
+        console.log("...may have a problem here...");
+    }
+
+    console.log("processPage() : post_data.length (ending) = " + post_count);
+
+    return [topic_data, post_data];                                        // return page_data
 
 
 }
+
+
 
 function checkPageData(page_data, opt) {
  
